@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, text
 
 app = FastAPI()
 
-DATABASE_URL = "mysql+pymysql://crud_user:db159@127.0.0.1:3306/crud_basic"
+DATABASE_URL = "mysql+pymysql://crud_user:crud_password_123@localhost:3306/crud_basic"
 
 engine = create_engine(DATABASE_URL)
 
