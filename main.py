@@ -1,11 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from sqlalchemy import create_engine, text
+from pydantic import BaseModel, EmailStr
 
 app = FastAPI()
 
 DATABASE_URL = "mysql+pymysql://crud_user:crud_password_123@localhost:3306/crud_basic"
 
 engine = create_engine(DATABASE_URL)
+
+class UserCreate(BaseModel):
+    name: str
+    email: EmailStr 
 
 
 @app.get("/")
@@ -42,3 +47,30 @@ def get_users():
             users.append(dict(row))
 
     return users
+#if access is executed 
+@app.post("/users")
+#Expect the incoming request body to match the UserCreate shape.
+def create_user(user:UserCreate):
+    with engine.connect() as connection:
+        result = connection.execute(
+            text("""
+                 INSERT INTO users (name, email)
+                 VALUES (:name, :email)
+                 """),
+                 {
+                     "name": user.name,
+                     "email": user.email
+                 }
+        )
+
+        connection.commit()
+
+        new_user_id = result.lastrowid
+
+        return {
+        "message": "User created successfully",
+        "id": new_user_id,
+        "name": user.name,
+        "email": user.email
+        }
+    
