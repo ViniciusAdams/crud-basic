@@ -1,1 +1,16 @@
+In order to start the FastAPI Server in local host run
 
+source .venv/bin/activate
+uvicorn main:app --reload
+
+Uvicorn running on http://127.0.0.1:8000
+
+http://127.0.0.1:8000
+
+http://127.0.0.1:8000/docs
+
+http://127.0.0.1:8000/users
+
+sudo systemctl start mariadb
+
+sudo systemctl status mariadb

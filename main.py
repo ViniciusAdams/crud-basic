@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr
 
 app = FastAPI()
@@ -51,6 +52,18 @@ def get_users():
 @app.post("/users")
 #Expect the incoming request body to match the UserCreate shape.
 def create_user(user:UserCreate):
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text(""
+                     INSERT INTO users (name, email)
+                     VALUES (:name, :email)
+                     ""),
+                     {
+                         "name": user.name,
+                         "email":user.email
+                     }
+            )
     with engine.connect() as connection:
         result = connection.execute(
             text("""
