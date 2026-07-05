@@ -9,9 +9,10 @@ DATABASE_URL = "mysql+pymysql://crud_user:crud_password_123@localhost:3306/crud_
 
 engine = create_engine(DATABASE_URL)
 
+
 class UserCreate(BaseModel):
     name: str
-    email: EmailStr 
+    email: EmailStr
 
 
 @app.get("/")
@@ -31,59 +32,49 @@ def db_test():
     }
 
 
-# By opening GET /users, the function below will be run
 @app.get("/users")
 def get_users():
-    # Opens the database connection
     with engine.connect() as connection:
-        # Runs normal SQL
         result = connection.execute(
             text("SELECT id, name, email, created_at FROM users;")
         )
 
         users = []
 
-        # Turns MariaDB rows into Python dictionaries
         for row in result.mappings():
             users.append(dict(row))
 
     return users
-#if access is executed 
+
+
 @app.post("/users")
-#Expect the incoming request body to match the UserCreate shape.
-def create_user(user:UserCreate):
+def create_user(user: UserCreate):
     try:
         with engine.connect() as connection:
             result = connection.execute(
-                text(""
-                     INSERT INTO users (name, email)
-                     VALUES (:name, :email)
-                     ""),
-                     {
-                         "name": user.name,
-                         "email":user.email
-                     }
+                text("""
+                    INSERT INTO users (name, email)
+                    VALUES (:name, :email)
+                """),
+                {
+                    "name": user.name,
+                    "email": user.email
+                }
             )
-    with engine.connect() as connection:
-        result = connection.execute(
-            text("""
-                 INSERT INTO users (name, email)
-                 VALUES (:name, :email)
-                 """),
-                 {
-                     "name": user.name,
-                     "email": user.email
-                 }
-        )
 
-        connection.commit()
+            connection.commit()
 
-        new_user_id = result.lastrowid
+            new_user_id = result.lastrowid
 
         return {
-        "message": "User created successfully",
-        "id": new_user_id,
-        "name": user.name,
-        "email": user.email
+            "message": "User created successfully",
+            "id": new_user_id,
+            "name": user.name,
+            "email": user.email
         }
-    
+
+    except IntegrityError:
+        raise HTTPException(
+            status_code=409,
+            detail="Email already exists"
+        )
