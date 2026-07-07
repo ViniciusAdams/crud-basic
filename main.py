@@ -78,3 +78,50 @@ def create_user(user: UserCreate):
             status_code=409,
             detail="Email already exists"
         )
+
+class UserUpdate(BaseModel):
+    name: str
+    email: EmailStr
+
+@app.put("/users/{user_id}")
+def update_user(user_id: int, user: UserUpdate):
+    try:
+        with engine.connect() as connection:
+            existing_user = connection.execute(
+                text("SELECT id FROM users WHERE id = :id"),
+                {"id": user_id}
+            ).fetchone()
+
+            if existing_user is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found"
+                )
+
+            connection.execute(
+                text("""
+                    UPDATE users
+                    SET name = :name, email = :email
+                    WHERE id = :id
+                """),
+                {
+                    "id": user_id,
+                    "name": user.name,
+                    "email": user.email
+                }
+            )
+
+            connection.commit()
+
+        return {
+            "message": "User updated successfully",
+            "id": user_id,
+            "name": user.name,
+            "email": user.email
+        }
+
+    except IntegrityError:
+        raise HTTPException(
+            status_code=409,
+            detail="Email already exists"
+        )
