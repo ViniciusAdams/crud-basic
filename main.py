@@ -125,3 +125,24 @@ def update_user(user_id: int, user: UserUpdate):
             status_code=409,
             detail="Email already exists"
         )
+#when a users sends a delete request to /user/something, run the fucntion bellow  
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int):
+    with engine.connect() as connection:
+        result = connection.execute(
+            text("DELETE FROM users WHERE id = :id"),
+            {"id": user_id}
+        )
+
+        connection.commit()
+
+        if result.rowcount == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+
+    return {
+        "message": "User deleted successfully",
+        "id": user_id
+    }
