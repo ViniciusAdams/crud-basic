@@ -146,3 +146,22 @@ def delete_user(user_id: int):
         "message": "User deleted successfully",
         "id": user_id
     }
+@app.get("/user/{user_id}")
+def get_user(user_id: int):
+    with engine.connect() as connection:
+        result = connection.execute(
+            text(""
+                 SELECT id, name, email, created_at
+                 FROM get_users
+                 WHERE id = :id
+                 "")
+        )
+        user = result.mappings().fetchone()
+
+        if user is None:
+             raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+
+    return dict(user)
