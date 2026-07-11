@@ -1,9 +1,19 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr
 
 app = FastAPI()
+
+# Allows your React frontend to talk to your FastAPI backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DATABASE_URL = "mysql+pymysql://crud_user:crud_password_123@localhost:3306/crud_basic"
 
@@ -11,6 +21,11 @@ engine = create_engine(DATABASE_URL)
 
 
 class UserCreate(BaseModel):
+    name: str
+    email: EmailStr
+
+
+class UserUpdate(BaseModel):
     name: str
     email: EmailStr
 
@@ -47,6 +62,29 @@ def get_users():
     return users
 
 
+@app.get("/users/{user_id}")
+def get_user(user_id: int):
+    with engine.connect() as connection:
+        result = connection.execute(
+            text("""
+                SELECT id, name, email, created_at
+                FROM users
+                WHERE id = :id
+            """),
+            {"id": user_id}
+        )
+
+        user = result.mappings().fetchone()
+
+        if user is None:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+
+    return dict(user)
+
+
 @app.post("/users")
 def create_user(user: UserCreate):
     try:
@@ -79,9 +117,6 @@ def create_user(user: UserCreate):
             detail="Email already exists"
         )
 
-class UserUpdate(BaseModel):
-    name: str
-    email: EmailStr
 
 @app.put("/users/{user_id}")
 def update_user(user_id: int, user: UserUpdate):
@@ -125,7 +160,8 @@ def update_user(user_id: int, user: UserUpdate):
             status_code=409,
             detail="Email already exists"
         )
-#when a users sends a delete request to /user/something, run the fucntion bellow  
+
+
 @app.delete("/users/{user_id}")
 def delete_user(user_id: int):
     with engine.connect() as connection:
@@ -146,22 +182,3 @@ def delete_user(user_id: int):
         "message": "User deleted successfully",
         "id": user_id
     }
-@app.get("/user/{user_id}")
-def get_user(user_id: int):
-    with engine.connect() as connection:
-        result = connection.execute(
-            text(""
-                 SELECT id, name, email, created_at
-                 FROM get_users
-                 WHERE id = :id
-                 "")
-        )
-        user = result.mappings().fetchone()
-
-        if user is None:
-             raise HTTPException(
-                status_code=404,
-                detail="User not found"
-            )
-
-    return dict(user)
